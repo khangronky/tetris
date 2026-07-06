@@ -1,6 +1,7 @@
 import type {
   BusinessWall,
   DifficultyPhase,
+  PoseDetection,
   PoseFrame,
   PoseId,
   PoseLandmark,
@@ -88,21 +89,29 @@ export function matchPose(
   frame: PoseFrame | null,
   difficulty: DifficultyPhase,
 ): PoseMatchResult {
-  if (!frame || frame.landmarks.length < MIN_WORLD_LANDMARKS) {
+  if (!frame || frame.poses.length === 0) {
     return NO_MATCH;
   }
 
-  const worldScore =
-    frame.worldLandmarks.length >= MIN_WORLD_LANDMARKS
-      ? scoreWorldPose(wall.poseId, frame.worldLandmarks)
-      : null;
-  const rawScore = worldScore ?? scoreLegacyPose(wall.poseId, frame.landmarks);
+  const bestScore = frame.poses.reduce<number | null>((best, pose) => {
+    const poseScore = scorePose(wall.poseId, pose);
 
-  if (rawScore === null) {
+    if (poseScore === null) {
+      return best;
+    }
+
+    if (best === null) {
+      return poseScore;
+    }
+
+    return Math.max(best, poseScore);
+  }, null);
+
+  if (bestScore === null) {
     return NO_MATCH;
   }
 
-  const confidenceAdjusted = clamp(rawScore * frame.confidence);
+  const confidenceAdjusted = clamp(bestScore);
   const score = Number(confidenceAdjusted.toFixed(2));
 
   return {
@@ -116,6 +125,16 @@ export function matchPose(
           ? "Pose matched"
           : "Keep adjusting",
   };
+}
+
+function scorePose(poseId: PoseId, pose: PoseDetection) {
+  const worldScore =
+    pose.worldLandmarks.length >= MIN_WORLD_LANDMARKS
+      ? scoreWorldPose(poseId, pose.worldLandmarks)
+      : null;
+  const rawScore = worldScore ?? scoreLegacyPose(poseId, pose.landmarks);
+
+  return rawScore === null ? null : clamp(rawScore * pose.confidence);
 }
 
 function scoreWorldPose(poseId: PoseId, landmarks: PoseLandmark[]) {

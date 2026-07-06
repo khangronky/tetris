@@ -11,6 +11,8 @@ const WASM_ROOT =
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
 const MODEL_URL =
   "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task";
+const MAX_POSES = 1;
+const LANDMARKS_PER_POSE = 33;
 const REQUIRED_BODY_LANDMARKS = [0, 11, 12, 13, 14, 15, 16, 23, 24];
 
 export type PoseEngine = {
@@ -34,24 +36,38 @@ export async function createPoseEngine(): Promise<PoseEngine> {
       }
 
       const result = landmarker.detectForVideo(video, timestampMs);
-      const landmarks = result.landmarks[0];
-      const worldLandmarks = result.worldLandmarks[0] ?? [];
+      const poses = result.landmarks.flatMap((landmarks, index) => {
+        if (landmarks.length !== LANDMARKS_PER_POSE) {
+          return [];
+        }
 
-      if (!landmarks || landmarks.length === 0) {
+        const worldLandmarks = result.worldLandmarks[index] ?? [];
+        const copiedLandmarks = landmarks.map(copyLandmark);
+        const copiedWorldLandmarks =
+          worldLandmarks.length === LANDMARKS_PER_POSE
+            ? worldLandmarks.map(copyLandmark)
+            : [];
+        const confidenceLandmarks =
+          copiedWorldLandmarks.length > 0
+            ? copiedWorldLandmarks
+            : copiedLandmarks;
+
+        return [
+          {
+            index,
+            landmarks: copiedLandmarks,
+            worldLandmarks: copiedWorldLandmarks,
+            confidence: getRequiredBodyConfidence(confidenceLandmarks),
+          },
+        ];
+      });
+
+      if (poses.length === 0) {
         return null;
       }
 
-      const copiedLandmarks = landmarks.map(copyLandmark);
-      const copiedWorldLandmarks = worldLandmarks.map(copyLandmark);
-      const confidenceLandmarks =
-        copiedWorldLandmarks.length > 0
-          ? copiedWorldLandmarks
-          : copiedLandmarks;
-
       return {
-        landmarks: copiedLandmarks,
-        worldLandmarks: copiedWorldLandmarks,
-        confidence: getRequiredBodyConfidence(confidenceLandmarks),
+        poses,
         detectedAtMs: timestampMs,
         width: video.videoWidth,
         height: video.videoHeight,
@@ -74,7 +90,7 @@ async function createLandmarker(
         delegate: "GPU",
       },
       runningMode: "VIDEO",
-      numPoses: 1,
+      numPoses: MAX_POSES,
       minPoseDetectionConfidence: 0.45,
       minPosePresenceConfidence: 0.45,
       minTrackingConfidence: 0.45,
@@ -86,7 +102,7 @@ async function createLandmarker(
         delegate: "CPU",
       },
       runningMode: "VIDEO",
-      numPoses: 1,
+      numPoses: MAX_POSES,
       minPoseDetectionConfidence: 0.45,
       minPosePresenceConfidence: 0.45,
       minTrackingConfidence: 0.45,

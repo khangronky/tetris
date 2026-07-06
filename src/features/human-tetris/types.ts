@@ -54,10 +54,15 @@ export type PoseLandmark = {
   presence?: number;
 };
 
-export type PoseFrame = {
+export type PoseDetection = {
+  index: number;
   landmarks: PoseLandmark[];
   worldLandmarks: PoseLandmark[];
   confidence: number;
+};
+
+export type PoseFrame = {
+  poses: PoseDetection[];
   detectedAtMs: number;
   width: number;
   height: number;
