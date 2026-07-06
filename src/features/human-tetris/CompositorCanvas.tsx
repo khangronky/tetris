@@ -6,6 +6,22 @@ import { forwardRef, useEffect, useRef } from "react";
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from "./game-data";
 import type { GameSnapshot } from "./types";
 
+// Module-level logo cache — loaded once, reused every frame.
+let logoImage: HTMLImageElement | null = null;
+let logoLoading = false;
+
+function getLogoImage(): HTMLImageElement | null {
+  if (logoImage) return logoImage;
+  if (logoLoading || typeof window === "undefined") return null;
+  logoLoading = true;
+  const img = new window.Image();
+  img.src = "/logo.png";
+  img.onload = () => {
+    logoImage = img;
+  };
+  return null;
+}
+
 type CompositorCanvasProps = {
   videoRef: RefObject<HTMLVideoElement | null>;
   snapshot: GameSnapshot;
@@ -59,7 +75,7 @@ export const CompositorCanvas = forwardRef<
       }}
       width={CANVAS_WIDTH}
       height={CANVAS_HEIGHT}
-      className="aspect-9/16 w-full rounded-[28px] border border-white/20 bg-background shadow-[0_28px_80px_rgba(0,27,84,0.22)]"
+      className="aspect-9/16 w-full rounded-[28px] border border-border/30 bg-background shadow-[0_28px_80px_rgba(0,27,84,0.22)]"
     />
   );
 });
@@ -100,20 +116,46 @@ function drawCompositedFrame({
   }
 }
 
+/**
+ * Reads semantic CSS custom-properties from the document root so that all
+ * canvas drawing automatically follows the active theme (light / dark).
+ */
+function getCanvasTokens() {
+  const style =
+    typeof window !== "undefined"
+      ? getComputedStyle(document.documentElement)
+      : null;
+  const get = (v: string, fallback: string) =>
+    style?.getPropertyValue(v).trim() || fallback;
+
+  return {
+    bg: get("--background", "oklch(0.985 0.006 162)"),
+    fg: get("--foreground", "oklch(0.18 0.08 264)"),
+    primary: get("--primary", "oklch(0.73 0.14 162)"),
+    card: get("--card", "oklch(1 0 0)"),
+  };
+}
+
 function drawBackground(
   context: CanvasRenderingContext2D,
   width: number,
   height: number,
   now: number,
 ) {
+  const { bg } = getCanvasTokens();
   const gradient = context.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, "#f8fcff");
-  gradient.addColorStop(0.5, "#eef8ff");
-  gradient.addColorStop(1, "#f7f2ff");
+  gradient.addColorStop(0, bg);
+  gradient.addColorStop(0.5, bg);
+  gradient.addColorStop(1, bg);
   context.fillStyle = gradient;
   context.fillRect(0, 0, width, height);
 
-  context.fillStyle = "rgba(2, 31, 84, 0.07)";
+  const { fg } = getCanvasTokens();
+  // Subtle animated grid using foreground at low opacity
+  context.fillStyle = fg.replace(")", " / 0.07)").replace("oklch(", "oklch(");
+  // Fallback safe: use a semi-transparent foreground overlay
+  context.globalAlpha = 0.07;
+  context.fillStyle = fg;
   const offset = (now / 32) % 64;
 
   for (let x = -64; x < width + 64; x += 64) {
@@ -123,6 +165,8 @@ function drawBackground(
   for (let y = -64; y < height + 64; y += 64) {
     context.fillRect(0, y + offset, width, 2);
   }
+
+  context.globalAlpha = 1;
 }
 
 function drawMirroredVideo(
@@ -175,24 +219,30 @@ function drawCameraPlaceholder(
   width: number,
   height: number,
 ) {
-  context.fillStyle = "rgba(255, 255, 255, 0.58)";
+  const { fg, card, primary } = getCanvasTokens();
+  context.fillStyle = card;
+  context.globalAlpha = 0.58;
   roundRect(context, 120, 470, width - 240, 760, 54);
   context.fill();
-  context.strokeStyle = "rgba(0, 132, 255, 0.28)";
+  context.globalAlpha = 1;
+  context.strokeStyle = primary;
+  context.globalAlpha = 0.28;
   context.lineWidth = 4;
   context.stroke();
+  context.globalAlpha = 1;
 
-  context.fillStyle = "#06204c";
+  context.fillStyle = fg;
   context.font = "700 58px sans-serif";
   context.textAlign = "center";
   context.fillText("Camera preview", width / 2, height / 2 - 20);
   context.font = "400 34px sans-serif";
-  context.fillStyle = "rgba(6, 32, 76, 0.68)";
+  context.globalAlpha = 0.68;
   context.fillText(
     "Start camera to load body tracking",
     width / 2,
     height / 2 + 44,
   );
+  context.globalAlpha = 1;
 }
 
 function drawPerspectiveGrid(
@@ -201,9 +251,10 @@ function drawPerspectiveGrid(
   height: number,
   now: number,
 ) {
+  const { primary } = getCanvasTokens();
   context.save();
   context.globalAlpha = 0.32;
-  context.strokeStyle = "rgba(0, 194, 255, 0.42)";
+  context.strokeStyle = primary;
   context.lineWidth = 2;
   const vanishingX = width / 2;
   const vanishingY = height * 0.46;
@@ -233,6 +284,7 @@ function drawHud(
   width: number,
   height: number,
 ) {
+  const { fg, primary } = getCanvasTokens();
   const time = Math.max(0, Math.ceil(snapshot.timeLeftMs / 1000));
   drawGlassPill(context, 48, 48, 235, 86, "TIME", `${time}s`);
   drawGlassPill(
@@ -245,42 +297,39 @@ function drawHud(
     `${snapshot.score}`,
   );
 
-  context.fillStyle = "#061b4d";
-  context.textAlign = "left";
-  context.font = "900 48px sans-serif";
-  context.fillText("RISE", 52, 182);
-  context.font = "500 22px sans-serif";
-  context.fillStyle = "rgba(6, 27, 77, 0.58)";
-  context.fillText("Founder Edition", 52, 214);
+  drawLogo(context);
 
   drawGlassPanel(context, 58, height - 252, width - 116, 168, 34);
   context.textAlign = "left";
-  context.fillStyle = "#061b4d";
+  context.fillStyle = fg;
   context.font = "800 34px sans-serif";
   context.fillText(snapshot.feedback, 92, height - 188);
   context.font = "600 28px sans-serif";
-  context.fillStyle = "rgba(6, 27, 77, 0.72)";
+  context.globalAlpha = 0.72;
   context.fillText(
     `Combo ${snapshot.combo}   Walls ${snapshot.wallsPassed}/${snapshot.wallsAttempted}`,
     92,
     height - 136,
   );
+  context.globalAlpha = 1;
 
   const barX = 92;
   const barY = height - 108;
   const barWidth = width - 184;
   const alignmentRatio = Math.max(0, Math.min(100, snapshot.alignment)) / 100;
-  context.fillStyle = "rgba(6, 27, 77, 0.14)";
+  context.globalAlpha = 0.14;
+  context.fillStyle = fg;
   roundRect(context, barX, barY, barWidth, 14, 7);
   context.fill();
+  context.globalAlpha = 1;
   const progress = context.createLinearGradient(
     barX,
     barY,
     barX + barWidth,
     barY,
   );
-  progress.addColorStop(0, "#00c2ff");
-  progress.addColorStop(1, "#7c5cff");
+  progress.addColorStop(0, primary);
+  progress.addColorStop(1, primary);
   context.fillStyle = progress;
   roundRect(context, barX, barY, barWidth * alignmentRatio, 14, 7);
   context.fill();
@@ -329,9 +378,12 @@ function drawFeedbackBurst(
   context.stroke();
 
   context.shadowBlur = 28;
-  context.fillStyle = "rgba(255, 255, 255, 0.82)";
+  const { card } = getCanvasTokens();
+  context.fillStyle = card;
+  context.globalAlpha = 0.82;
   roundRect(context, x, y, panelWidth, panelHeight, 30);
   context.fill();
+  context.globalAlpha = 1;
   context.shadowBlur = 0;
   context.strokeStyle = getFeedbackColor(burst.kind, 0.62);
   context.lineWidth = 3;
@@ -343,7 +395,8 @@ function drawFeedbackBurst(
   context.fillText(label, width / 2, y + 34);
 
   context.font = "900 38px sans-serif";
-  context.fillStyle = "#061b4d";
+  const { fg } = getCanvasTokens();
+  context.fillStyle = fg;
   context.fillText(
     truncateCanvasText(context, burst.message, panelWidth - 72),
     width / 2,
@@ -351,12 +404,13 @@ function drawFeedbackBurst(
   );
 
   context.font = "700 21px sans-serif";
-  context.fillStyle = "rgba(6, 27, 77, 0.68)";
+  context.globalAlpha = 0.68;
   context.fillText(
     `${Math.round(burst.alignment)}% alignment`,
     width / 2,
     y + 108,
   );
+  context.globalAlpha = 1;
 
   context.restore();
 }
@@ -421,14 +475,19 @@ function drawCountdown(
   width: number,
   height: number,
 ) {
+  const { fg, card, primary } = getCanvasTokens();
   context.save();
-  context.fillStyle = "rgba(255, 255, 255, 0.72)";
+  context.fillStyle = card;
+  context.globalAlpha = 0.72;
   roundRect(context, width / 2 - 158, height / 2 - 158, 316, 316, 60);
   context.fill();
-  context.strokeStyle = "rgba(0, 132, 255, 0.62)";
+  context.globalAlpha = 1;
+  context.strokeStyle = primary;
+  context.globalAlpha = 0.62;
   context.lineWidth = 5;
   context.stroke();
-  context.fillStyle = "#061b4d";
+  context.globalAlpha = 1;
+  context.fillStyle = fg;
   context.textAlign = "center";
   context.font = "900 164px sans-serif";
   context.fillText(`${countdown}`, width / 2, height / 2 + 58);
@@ -440,26 +499,51 @@ function drawFinalCard(
   snapshot: GameSnapshot,
   width: number,
 ) {
+  const { fg, primary } = getCanvasTokens();
   drawGlassPanel(context, 90, 430, width - 180, 820, 56);
   context.textAlign = "center";
-  context.fillStyle = "#061b4d";
+  context.fillStyle = fg;
   context.font = "900 56px sans-serif";
   context.fillText("Founder Score", width / 2, 540);
   context.font = "900 132px sans-serif";
   context.fillText(`${snapshot.score}`, width / 2, 685);
 
   context.font = "900 48px sans-serif";
-  context.fillStyle = "#0a84ff";
+  context.fillStyle = primary;
   context.fillText(snapshot.rank.toUpperCase(), width / 2, 780);
 
   context.font = "700 32px sans-serif";
-  context.fillStyle = "rgba(6, 27, 77, 0.78)";
+  context.fillStyle = fg;
+  context.globalAlpha = 0.78;
   context.fillText(
     `Walls Passed ${snapshot.wallsPassed}   Longest Combo ${snapshot.longestCombo}`,
     width / 2,
     870,
   );
   context.fillText("Can your friends beat you?", width / 2, 940);
+  context.globalAlpha = 1;
+}
+
+function drawLogo(context: CanvasRenderingContext2D) {
+  const img = getLogoImage();
+
+  if (!img) return;
+
+  // Logo target region: upper-left, same area the RISE text occupied.
+  // logo.png is 1270×952 (approx 4:3). We render it at 260×195 but crop
+  // the excess vertical space — the actual mark sits in the top ~55% of
+  // the image, so we draw a taller box and clip.
+  const logoW = 280;
+  const logoH = Math.round((img.naturalHeight / img.naturalWidth) * logoW);
+  const logoX = 38;
+  const logoY = 142;
+
+  context.save();
+  // 'multiply' makes white pixels transparent on light surfaces;
+  // works well over both the glass panel and the video overlay.
+  context.globalCompositeOperation = "multiply";
+  context.drawImage(img, logoX, logoY, logoW, logoH);
+  context.restore();
 }
 
 function drawGlassPill(
@@ -471,12 +555,15 @@ function drawGlassPill(
   label: string,
   value: string,
 ) {
+  const { fg } = getCanvasTokens();
   drawGlassPanel(context, x, y, width, height, 24);
-  context.fillStyle = "rgba(6, 27, 77, 0.56)";
+  context.globalAlpha = 0.56;
+  context.fillStyle = fg;
   context.font = "700 18px sans-serif";
   context.textAlign = "left";
   context.fillText(label, x + 28, y + 31);
-  context.fillStyle = "#061b4d";
+  context.globalAlpha = 1;
+  context.fillStyle = fg;
   context.font = "900 34px sans-serif";
   context.fillText(value, x + 28, y + 67);
 }
@@ -489,13 +576,17 @@ function drawGlassPanel(
   height: number,
   radius: number,
 ) {
+  const { card } = getCanvasTokens();
   context.save();
-  context.fillStyle = "rgba(255, 255, 255, 0.66)";
+  context.fillStyle = card;
+  context.globalAlpha = 0.66;
   roundRect(context, x, y, width, height, radius);
   context.fill();
-  context.strokeStyle = "rgba(255, 255, 255, 0.76)";
+  context.globalAlpha = 0.76;
+  context.strokeStyle = card;
   context.lineWidth = 2;
   context.stroke();
+  context.globalAlpha = 1;
   context.restore();
 }
 

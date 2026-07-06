@@ -499,7 +499,7 @@ export function HumanTetrisGame() {
         >
           <div className="relative w-full max-w-110">
             <div className="absolute -inset-3 rounded-[36px] bg-primary/15 blur-2xl" />
-            <div className="relative rounded-[34px] border border-white/30 bg-white/35 p-2 shadow-2xl backdrop-blur-xl">
+            <div className="relative rounded-[34px] border border-border bg-card/35 p-2 shadow-2xl backdrop-blur-xl">
               <CompositorCanvas
                 ref={canvasRef}
                 videoRef={videoRef}
@@ -600,7 +600,7 @@ export function HumanTetrisGame() {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-white/40 bg-white/50 p-3 backdrop-blur">
+    <div className="rounded-lg border border-border bg-card/50 p-3 backdrop-blur">
       <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
         {label}
       </p>
