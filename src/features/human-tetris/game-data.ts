@@ -1,15 +1,17 @@
-import type { BusinessWall, DifficultyPhase } from "./types";
+import type { BusinessWall } from "./types";
 
 export const GAME_DURATION_MS = 60_000;
 export const COUNTDOWN_SECONDS = 3;
 export const CANVAS_WIDTH = 1080;
 export const CANVAS_HEIGHT = 1920;
 export const WALL_APPROACH_DURATION_MS = 5_000;
+export const MATCH_THRESHOLD = 70;
+export const PERFECT_THRESHOLD = 90;
 
 export const BUSINESS_WALLS: BusinessWall[] = [
   {
     id: 1,
-    poseId: "idea",
+    poseId: "I_HAVE_AN_IDEA",
     title: "I Have an Idea",
     theme: "Founder spark",
     category: "Leadership",
@@ -17,7 +19,7 @@ export const BUSINESS_WALLS: BusinessWall[] = [
   },
   {
     id: 2,
-    poseId: "investorPitch",
+    poseId: "PITCHING_INVESTORS",
     title: "Pitching Investors",
     theme: "Investor pitch",
     category: "Capital",
@@ -25,7 +27,7 @@ export const BUSINESS_WALLS: BusinessWall[] = [
   },
   {
     id: 3,
-    poseId: "mvpTyping",
+    poseId: "BUILDING_MVP",
     title: "Building MVP",
     theme: "AI builder",
     category: "Product",
@@ -33,7 +35,7 @@ export const BUSINESS_WALLS: BusinessWall[] = [
   },
   {
     id: 4,
-    poseId: "networking",
+    poseId: "NETWORKING",
     title: "Networking",
     theme: "Handshake",
     category: "Community",
@@ -41,7 +43,7 @@ export const BUSINESS_WALLS: BusinessWall[] = [
   },
   {
     id: 5,
-    poseId: "demoDay",
+    poseId: "DEMO_DAY",
     title: "Demo Day",
     theme: "One-hand presenting",
     category: "Public speaking",
@@ -49,7 +51,7 @@ export const BUSINESS_WALLS: BusinessWall[] = [
   },
   {
     id: 6,
-    poseId: "fundingClosed",
+    poseId: "VICTORY_POSE",
     title: "Funding Closed",
     theme: "Victory pose",
     category: "Celebration",
@@ -57,7 +59,7 @@ export const BUSINESS_WALLS: BusinessWall[] = [
   },
   {
     id: 7,
-    poseId: "problemSolving",
+    poseId: "PROBLEM_SOLVING",
     title: "Problem Solving",
     theme: "Thinking pose",
     category: "Decision making",
@@ -65,7 +67,7 @@ export const BUSINESS_WALLS: BusinessWall[] = [
   },
   {
     id: 8,
-    poseId: "welcomeTeam",
+    poseId: "WELCOME_MEMBERS",
     title: "Welcome New Members",
     theme: "Open arms",
     category: "Teamwork",
@@ -73,7 +75,7 @@ export const BUSINESS_WALLS: BusinessWall[] = [
   },
   {
     id: 9,
-    poseId: "ceoMindset",
+    poseId: "CEO_MINDSET",
     title: "CEO Mindset",
     theme: "Power stance",
     category: "Founder",
@@ -81,50 +83,11 @@ export const BUSINESS_WALLS: BusinessWall[] = [
   },
   {
     id: 10,
-    poseId: "scaleUp",
+    poseId: "SCALE_UP",
     title: "Scale Up",
     theme: "Rocket launch",
     category: "Growth",
     cue: "Point one hand high like a launch.",
-  },
-];
-
-export const DIFFICULTY_PHASES: DifficultyPhase[] = [
-  {
-    label: "Seed",
-    startsAtMs: 0,
-    wallDurationMs: WALL_APPROACH_DURATION_MS,
-    threshold: 0.58,
-    perfectThreshold: 0.84,
-    holeScale: 1.16,
-    rotationDeg: 0,
-  },
-  {
-    label: "Series A",
-    startsAtMs: 15_000,
-    wallDurationMs: WALL_APPROACH_DURATION_MS,
-    threshold: 0.64,
-    perfectThreshold: 0.88,
-    holeScale: 1.02,
-    rotationDeg: 2,
-  },
-  {
-    label: "Scale",
-    startsAtMs: 30_000,
-    wallDurationMs: WALL_APPROACH_DURATION_MS,
-    threshold: 0.7,
-    perfectThreshold: 0.9,
-    holeScale: 0.94,
-    rotationDeg: -3,
-  },
-  {
-    label: "Unicorn",
-    startsAtMs: 45_000,
-    wallDurationMs: WALL_APPROACH_DURATION_MS,
-    threshold: 0.74,
-    perfectThreshold: 0.92,
-    holeScale: 0.86,
-    rotationDeg: 5,
   },
 ];
 
@@ -146,18 +109,6 @@ export const SOCIAL_HASHTAGS = [
   "#EntrepreneurLife",
   "#AIChallenge",
 ];
-
-export function getDifficulty(elapsedMs: number) {
-  for (let index = DIFFICULTY_PHASES.length - 1; index >= 0; index -= 1) {
-    const phase = DIFFICULTY_PHASES[index];
-
-    if (elapsedMs >= phase.startsAtMs) {
-      return phase;
-    }
-  }
-
-  return DIFFICULTY_PHASES[0];
-}
 
 export function getWallByIndex(index: number) {
   return BUSINESS_WALLS[index % BUSINESS_WALLS.length];

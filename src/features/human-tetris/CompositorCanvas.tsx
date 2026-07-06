@@ -4,7 +4,7 @@ import type { RefObject } from "react";
 import { forwardRef, useEffect, useRef } from "react";
 
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from "./game-data";
-import type { GameSnapshot, PoseId } from "./types";
+import type { GameSnapshot } from "./types";
 
 type CompositorCanvasProps = {
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -88,7 +88,6 @@ function drawCompositedFrame({
   }
 
   drawPerspectiveGrid(context, width, height, now);
-  drawWall(context, snapshot, width, height, now);
   drawHud(context, snapshot, width, height);
   drawFeedbackBurst(context, snapshot, width, height, now);
 
@@ -270,6 +269,7 @@ function drawHud(
   const barX = 92;
   const barY = height - 108;
   const barWidth = width - 184;
+  const alignmentRatio = Math.max(0, Math.min(100, snapshot.alignment)) / 100;
   context.fillStyle = "rgba(6, 27, 77, 0.14)";
   roundRect(context, barX, barY, barWidth, 14, 7);
   context.fill();
@@ -282,82 +282,8 @@ function drawHud(
   progress.addColorStop(0, "#00c2ff");
   progress.addColorStop(1, "#7c5cff");
   context.fillStyle = progress;
-  roundRect(context, barX, barY, barWidth * snapshot.alignment, 14, 7);
+  roundRect(context, barX, barY, barWidth * alignmentRatio, 14, 7);
   context.fill();
-}
-
-function drawWall(
-  context: CanvasRenderingContext2D,
-  snapshot: GameSnapshot,
-  width: number,
-  height: number,
-  now: number,
-) {
-  if (snapshot.status !== "playing" && snapshot.status !== "countdown") {
-    return;
-  }
-
-  const distance = snapshot.status === "countdown" ? 1 : snapshot.distance;
-  const scale = 0.58 + (1 - distance) * 0.62;
-  const panelWidth = width * 0.68 * scale;
-  const panelHeight = height * 0.36 * scale;
-  const x = (width - panelWidth) / 2;
-  const y = height * (0.2 + distance * 0.13);
-  const rotation =
-    ((snapshot.difficulty.rotationDeg * (1 - distance)) / 180) * Math.PI;
-
-  context.save();
-  context.translate(width / 2, y + panelHeight / 2);
-  context.rotate(rotation);
-  context.translate(-width / 2, -(y + panelHeight / 2));
-
-  const wallGradient = context.createLinearGradient(x, y, x + panelWidth, y);
-  wallGradient.addColorStop(0, "rgba(255, 255, 255, 0.72)");
-  wallGradient.addColorStop(0.5, "rgba(225, 248, 255, 0.54)");
-  wallGradient.addColorStop(1, "rgba(235, 229, 255, 0.62)");
-  context.fillStyle = wallGradient;
-  roundRect(context, x, y, panelWidth, panelHeight, 42);
-  context.fill();
-  const burstOpacity = getFeedbackBurstOpacity(snapshot, now);
-  context.strokeStyle =
-    burstOpacity > 0 && snapshot.feedbackBurst
-      ? getFeedbackColor(snapshot.feedbackBurst.kind, 0.5 + burstOpacity * 0.38)
-      : "rgba(0, 132, 255, 0.62)";
-  context.lineWidth = 6;
-  context.shadowColor =
-    burstOpacity > 0 && snapshot.feedbackBurst
-      ? getFeedbackColor(snapshot.feedbackBurst.kind, 0.45)
-      : "transparent";
-  context.shadowBlur = burstOpacity * 28;
-  context.stroke();
-
-  context.fillStyle = "rgba(6, 27, 77, 0.72)";
-  context.font = "900 35px sans-serif";
-  context.textAlign = "center";
-  context.fillText(snapshot.currentWall.title, width / 2, y + 70 * scale);
-  context.font = "600 23px sans-serif";
-  context.fillStyle = "rgba(6, 27, 77, 0.58)";
-  context.fillText(snapshot.currentWall.theme, width / 2, y + 108 * scale);
-
-  drawPoseGuide(
-    context,
-    snapshot.currentWall.poseId,
-    width / 2,
-    y + panelHeight * 0.58,
-    230 * snapshot.difficulty.holeScale * scale,
-    now,
-  );
-
-  context.restore();
-
-  context.fillStyle = "rgba(6, 27, 77, 0.74)";
-  context.font = "700 25px sans-serif";
-  context.textAlign = "center";
-  context.fillText(
-    `Incoming wall: ${Math.round((1 - distance) * 100)}%`,
-    width / 2,
-    y + panelHeight + 72,
-  );
 }
 
 function drawFeedbackBurst(
@@ -427,7 +353,7 @@ function drawFeedbackBurst(
   context.font = "700 21px sans-serif";
   context.fillStyle = "rgba(6, 27, 77, 0.68)";
   context.fillText(
-    `${Math.round(burst.alignment * 100)}% alignment`,
+    `${Math.round(burst.alignment)}% alignment`,
     width / 2,
     y + 108,
   );
@@ -487,88 +413,6 @@ function truncateCanvasText(
   }
 
   return "...";
-}
-
-function drawPoseGuide(
-  context: CanvasRenderingContext2D,
-  poseId: PoseId,
-  centerX: number,
-  centerY: number,
-  scale: number,
-  now: number,
-) {
-  const pulse = 0.78 + Math.sin(now / 180) * 0.12;
-  context.save();
-  context.lineCap = "round";
-  context.lineJoin = "round";
-  context.strokeStyle = `rgba(0, 194, 255, ${pulse})`;
-  context.lineWidth = Math.max(9, scale * 0.05);
-  context.shadowColor = "rgba(0, 194, 255, 0.56)";
-  context.shadowBlur = 22;
-
-  const headY = centerY - scale * 0.62;
-  const shoulderY = centerY - scale * 0.34;
-  const hipY = centerY + scale * 0.16;
-  const footY = centerY + scale * 0.62;
-  const shoulderLeft = centerX - scale * 0.22;
-  const shoulderRight = centerX + scale * 0.22;
-  const hipLeft = centerX - scale * 0.16;
-  const hipRight = centerX + scale * 0.16;
-
-  context.beginPath();
-  context.arc(centerX, headY, scale * 0.12, 0, Math.PI * 2);
-  context.stroke();
-
-  line(context, centerX, headY + scale * 0.12, centerX, hipY);
-  line(context, shoulderLeft, shoulderY, shoulderRight, shoulderY);
-  line(context, hipLeft, hipY, hipRight, hipY);
-  line(context, hipLeft, hipY, centerX - scale * 0.26, footY);
-  line(context, hipRight, hipY, centerX + scale * 0.26, footY);
-
-  switch (poseId) {
-    case "idea":
-    case "fundingClosed":
-      line(context, shoulderLeft, shoulderY, centerX - scale * 0.42, headY);
-      line(context, shoulderRight, shoulderY, centerX + scale * 0.42, headY);
-      break;
-    case "investorPitch":
-    case "demoDay":
-      line(context, shoulderLeft, shoulderY, centerX - scale * 0.56, shoulderY);
-      line(context, shoulderRight, shoulderY, centerX + scale * 0.18, hipY);
-      break;
-    case "mvpTyping":
-      line(context, shoulderLeft, shoulderY, centerX - scale * 0.13, hipY);
-      line(context, shoulderRight, shoulderY, centerX + scale * 0.13, hipY);
-      break;
-    case "networking":
-      line(context, shoulderRight, shoulderY, centerX + scale * 0.5, centerY);
-      line(context, shoulderLeft, shoulderY, centerX - scale * 0.12, hipY);
-      break;
-    case "problemSolving":
-      line(context, shoulderRight, shoulderY, centerX + scale * 0.06, headY);
-      line(context, shoulderLeft, shoulderY, centerX - scale * 0.2, hipY);
-      break;
-    case "welcomeTeam":
-      line(context, shoulderLeft, shoulderY, centerX - scale * 0.66, centerY);
-      line(context, shoulderRight, shoulderY, centerX + scale * 0.66, centerY);
-      break;
-    case "ceoMindset":
-      line(context, shoulderLeft, shoulderY, hipLeft, hipY);
-      line(context, shoulderRight, shoulderY, hipRight, hipY);
-      break;
-    case "scaleUp":
-      line(
-        context,
-        shoulderRight,
-        shoulderY,
-        centerX + scale * 0.28,
-        headY - scale * 0.28,
-      );
-      line(context, shoulderLeft, shoulderY, hipLeft, hipY);
-      break;
-  }
-
-  context.restore();
 }
 
 function drawCountdown(
@@ -653,19 +497,6 @@ function drawGlassPanel(
   context.lineWidth = 2;
   context.stroke();
   context.restore();
-}
-
-function line(
-  context: CanvasRenderingContext2D,
-  fromX: number,
-  fromY: number,
-  toX: number,
-  toY: number,
-) {
-  context.beginPath();
-  context.moveTo(fromX, fromY);
-  context.lineTo(toX, toY);
-  context.stroke();
 }
 
 function roundRect(

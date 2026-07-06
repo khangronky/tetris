@@ -1,9 +1,8 @@
 import { create } from "zustand";
 
-import { BUSINESS_WALLS, getDifficulty, getWallByIndex } from "./game-data";
+import { BUSINESS_WALLS, getWallByIndex } from "./game-data";
 import { getAccuracy, getFounderRank } from "./score";
 import type {
-  DifficultyPhase,
   FeedbackBurst,
   GameSnapshot,
   GameStatus,
@@ -181,12 +180,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   getSnapshot() {
     const state = get();
-    const difficulty: DifficultyPhase = getDifficulty(state.elapsedMs);
 
     return {
       status: state.status,
       currentWall: getWallByIndex(state.currentWallIndex),
-      difficulty,
       timeLeftMs: state.timeLeftMs,
       score: state.score,
       combo: state.combo,

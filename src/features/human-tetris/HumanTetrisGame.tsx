@@ -30,12 +30,13 @@ import { CompositorCanvas } from "./CompositorCanvas";
 import {
   COUNTDOWN_SECONDS,
   GAME_DURATION_MS,
-  getDifficulty,
   getWallByIndex,
   SOCIAL_HASHTAGS,
   SUCCESS_FEEDBACK,
+  WALL_APPROACH_DURATION_MS,
 } from "./game-data";
 import { useGameStore } from "./game-store";
+import { PoseWallCard } from "./PoseWallCard";
 import { createPoseEngine, type PoseEngine } from "./pose-engine";
 import { matchPose } from "./pose-matchers";
 import {
@@ -77,7 +78,6 @@ export function HumanTetrisGame() {
   const longestCombo = useGameStore((state) => state.longestCombo);
   const currentWallIndex = useGameStore((state) => state.currentWallIndex);
   const timeLeftMs = useGameStore((state) => state.timeLeftMs);
-  const elapsedMs = useGameStore((state) => state.elapsedMs);
   const countdown = useGameStore((state) => state.countdown);
   const alignment = useGameStore((state) => state.alignment);
   const distance = useGameStore((state) => state.distance);
@@ -87,13 +87,11 @@ export function HumanTetrisGame() {
     () => getWallByIndex(currentWallIndex),
     [currentWallIndex],
   );
-  const difficulty = useMemo(() => getDifficulty(elapsedMs), [elapsedMs]);
   const rank = useMemo(() => getFounderRank(score), [score]);
   const snapshot = useMemo<GameSnapshot>(
     () => ({
       status,
       currentWall,
-      difficulty,
       timeLeftMs,
       score,
       combo,
@@ -110,7 +108,6 @@ export function HumanTetrisGame() {
     [
       status,
       currentWall,
-      difficulty,
       timeLeftMs,
       score,
       combo,
@@ -198,10 +195,9 @@ export function HumanTetrisGame() {
 
       const elapsedMs = now - startTimeRef.current;
       const timeLeftMs = Math.max(0, GAME_DURATION_MS - elapsedMs);
-      const difficulty = getDifficulty(elapsedMs);
       const wall = getWallByIndex(state.currentWallIndex);
       const wallElapsed = now - wallStartTimeRef.current;
-      const distance = Math.max(0, 1 - wallElapsed / difficulty.wallDurationMs);
+      const distance = Math.max(0, 1 - wallElapsed / WALL_APPROACH_DURATION_MS);
 
       if (
         videoRef.current &&
@@ -212,7 +208,7 @@ export function HumanTetrisGame() {
         latestPoseRef.current = engineRef.current.detect(videoRef.current, now);
       }
 
-      const match = matchPose(wall, latestPoseRef.current, difficulty);
+      const match = matchPose(wall, latestPoseRef.current);
 
       if (now - storeTickTimeRef.current > 90) {
         storeTickTimeRef.current = now;
@@ -224,7 +220,7 @@ export function HumanTetrisGame() {
         });
       }
 
-      if (wallElapsed >= difficulty.wallDurationMs) {
+      if (wallElapsed >= WALL_APPROACH_DURATION_MS) {
         const latestState = useGameStore.getState();
         const nextCombo = match.passed ? latestState.combo + 1 : 0;
         const points = match.passed
@@ -272,8 +268,8 @@ export function HumanTetrisGame() {
         audio: false,
         video: {
           facingMode: "user",
-          width: { ideal: 720 },
-          height: { ideal: 1280 },
+          width: { ideal: 1080 },
+          height: { ideal: 1920 },
         },
       });
       const engine = await createPoseEngine().catch((engineError: unknown) => {
@@ -469,9 +465,7 @@ export function HumanTetrisGame() {
           <Card className="rise-card" size="sm">
             <CardHeader>
               <CardTitle>Current Wall</CardTitle>
-              <CardDescription>
-                {snapshot.difficulty.label} phase
-              </CardDescription>
+              <CardDescription>{snapshot.currentWall.theme}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               <div>
@@ -490,7 +484,7 @@ export function HumanTetrisGame() {
                 />
                 <Metric
                   label="Align"
-                  value={`${Math.round(snapshot.alignment * 100)}%`}
+                  value={`${Math.round(snapshot.alignment)}%`}
                 />
               </div>
             </CardContent>
@@ -529,6 +523,8 @@ export function HumanTetrisGame() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.45 }}
         >
+          <PoseWallCard snapshot={snapshot} />
+
           <Card className="rise-card" size="sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

@@ -1,3 +1,6 @@
+export type { PoseId } from "./target-poses";
+import type { PoseId } from "./target-poses";
+
 export type GameStatus =
   | "idle"
   | "loading"
@@ -6,18 +9,6 @@ export type GameStatus =
   | "playing"
   | "finished"
   | "error";
-
-export type PoseId =
-  | "idea"
-  | "investorPitch"
-  | "mvpTyping"
-  | "networking"
-  | "demoDay"
-  | "fundingClosed"
-  | "problemSolving"
-  | "welcomeTeam"
-  | "ceoMindset"
-  | "scaleUp";
 
 export type FounderRank =
   | "Intern"
@@ -34,16 +25,6 @@ export type BusinessWall = {
   theme: string;
   category: string;
   cue: string;
-};
-
-export type DifficultyPhase = {
-  label: string;
-  startsAtMs: number;
-  wallDurationMs: number;
-  threshold: number;
-  perfectThreshold: number;
-  holeScale: number;
-  rotationDeg: number;
 };
 
 export type PoseLandmark = {
@@ -103,7 +84,6 @@ export type RecordingResult = {
 export type GameSnapshot = {
   status: GameStatus;
   currentWall: BusinessWall;
-  difficulty: DifficultyPhase;
   timeLeftMs: number;
   score: number;
   combo: number;
