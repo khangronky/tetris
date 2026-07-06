@@ -503,7 +503,7 @@ export function HumanTetrisGame() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="relative w-full max-w-[440px]">
+          <div className="relative w-full max-w-110">
             <div className="absolute -inset-3 rounded-[36px] bg-primary/15 blur-2xl" />
             <div className="relative rounded-[34px] border border-white/30 bg-white/35 p-2 shadow-2xl backdrop-blur-xl">
               <CompositorCanvas

@@ -59,7 +59,7 @@ export const CompositorCanvas = forwardRef<
       }}
       width={CANVAS_WIDTH}
       height={CANVAS_HEIGHT}
-      className="aspect-[9/16] w-full rounded-[28px] border border-white/20 bg-background shadow-[0_28px_80px_rgba(0,27,84,0.22)]"
+      className="aspect-9/16 w-full rounded-[28px] border border-white/20 bg-background shadow-[0_28px_80px_rgba(0,27,84,0.22)]"
     />
   );
 });
@@ -375,62 +375,61 @@ function drawFeedbackBurst(
   }
 
   const label = burst.kind === "success" ? "MATCHED" : "MISSED";
-  const x = 82;
-  const y = height * 0.39;
-  const panelWidth = width - 164;
-  const panelHeight = 178;
+  const panelWidth = width - 156;
+  const panelHeight = 126;
+  const x = (width - panelWidth) / 2;
+  const y = height - 410;
 
   context.save();
   context.globalAlpha = opacity;
 
-  const vignette = context.createRadialGradient(
-    width / 2,
-    height * 0.42,
-    width * 0.05,
-    width / 2,
-    height * 0.42,
-    height * 0.64,
+  const bottomGlow = context.createLinearGradient(
+    0,
+    y - 72,
+    0,
+    y + panelHeight + 34,
   );
-  vignette.addColorStop(0, getFeedbackColor(burst.kind, 0.08));
-  vignette.addColorStop(1, getFeedbackColor(burst.kind, 0.28));
-  context.fillStyle = vignette;
-  context.fillRect(0, 0, width, height);
+  bottomGlow.addColorStop(0, getFeedbackColor(burst.kind, 0));
+  bottomGlow.addColorStop(0.5, getFeedbackColor(burst.kind, 0.18));
+  bottomGlow.addColorStop(1, getFeedbackColor(burst.kind, 0));
+  context.fillStyle = bottomGlow;
+  context.fillRect(0, y - 72, width, panelHeight + 106);
 
   context.strokeStyle = getFeedbackColor(burst.kind, 0.82);
-  context.lineWidth = 10;
-  context.shadowColor = getFeedbackColor(burst.kind, 0.5);
-  context.shadowBlur = 42;
+  context.lineWidth = 8;
+  context.shadowColor = getFeedbackColor(burst.kind, 0.42);
+  context.shadowBlur = 34;
   roundRect(context, 26, 26, width - 52, height - 52, 38);
   context.stroke();
 
-  context.shadowBlur = 34;
-  context.fillStyle = "rgba(255, 255, 255, 0.78)";
-  roundRect(context, x, y, panelWidth, panelHeight, 36);
+  context.shadowBlur = 28;
+  context.fillStyle = "rgba(255, 255, 255, 0.82)";
+  roundRect(context, x, y, panelWidth, panelHeight, 30);
   context.fill();
   context.shadowBlur = 0;
-  context.strokeStyle = getFeedbackColor(burst.kind, 0.58);
+  context.strokeStyle = getFeedbackColor(burst.kind, 0.62);
   context.lineWidth = 3;
   context.stroke();
 
   context.textAlign = "center";
-  context.font = "900 28px sans-serif";
+  context.font = "900 22px sans-serif";
   context.fillStyle = getFeedbackColor(burst.kind, 1);
-  context.fillText(label, width / 2, y + 48);
+  context.fillText(label, width / 2, y + 34);
 
-  context.font = "900 48px sans-serif";
+  context.font = "900 38px sans-serif";
   context.fillStyle = "#061b4d";
   context.fillText(
     truncateCanvasText(context, burst.message, panelWidth - 72),
     width / 2,
-    y + 105,
+    y + 76,
   );
 
-  context.font = "700 26px sans-serif";
+  context.font = "700 21px sans-serif";
   context.fillStyle = "rgba(6, 27, 77, 0.68)";
   context.fillText(
     `${Math.round(burst.alignment * 100)}% alignment`,
     width / 2,
-    y + 148,
+    y + 108,
   );
 
   context.restore();
