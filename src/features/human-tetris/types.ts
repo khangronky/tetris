@@ -51,10 +51,12 @@ export type PoseLandmark = {
   y: number;
   z: number;
   visibility: number;
+  presence?: number;
 };
 
 export type PoseFrame = {
   landmarks: PoseLandmark[];
+  worldLandmarks: PoseLandmark[];
   confidence: number;
   detectedAtMs: number;
   width: number;

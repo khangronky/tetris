@@ -1,5 +1,6 @@
 import type {
   FilesetResolver,
+  Landmark,
   PoseLandmarker as MediaPipePoseLandmarker,
   NormalizedLandmark,
 } from "@mediapipe/tasks-vision";
@@ -10,6 +11,7 @@ const WASM_ROOT =
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
 const MODEL_URL =
   "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task";
+const REQUIRED_BODY_LANDMARKS = [0, 11, 12, 13, 14, 15, 16, 23, 24];
 
 export type PoseEngine = {
   detect: (video: HTMLVideoElement, timestampMs: number) => PoseFrame | null;
@@ -33,21 +35,23 @@ export async function createPoseEngine(): Promise<PoseEngine> {
 
       const result = landmarker.detectForVideo(video, timestampMs);
       const landmarks = result.landmarks[0];
+      const worldLandmarks = result.worldLandmarks[0] ?? [];
 
       if (!landmarks || landmarks.length === 0) {
         return null;
       }
 
       const copiedLandmarks = landmarks.map(copyLandmark);
-      const confidence =
-        copiedLandmarks.reduce(
-          (total, landmark) => total + landmark.visibility,
-          0,
-        ) / copiedLandmarks.length;
+      const copiedWorldLandmarks = worldLandmarks.map(copyLandmark);
+      const confidenceLandmarks =
+        copiedWorldLandmarks.length > 0
+          ? copiedWorldLandmarks
+          : copiedLandmarks;
 
       return {
         landmarks: copiedLandmarks,
-        confidence: Math.max(0.45, Math.min(1, confidence)),
+        worldLandmarks: copiedWorldLandmarks,
+        confidence: getRequiredBodyConfidence(confidenceLandmarks),
         detectedAtMs: timestampMs,
         width: video.videoWidth,
         height: video.videoHeight,
@@ -90,11 +94,33 @@ async function createLandmarker(
   }
 }
 
-function copyLandmark(landmark: NormalizedLandmark): PoseLandmark {
+type MediaPipeLandmark = (Landmark | NormalizedLandmark) & {
+  presence?: number;
+};
+
+function copyLandmark(landmark: MediaPipeLandmark): PoseLandmark {
   return {
     x: landmark.x,
     y: landmark.y,
     z: landmark.z,
     visibility: landmark.visibility ?? 0,
+    presence: landmark.presence,
   };
+}
+
+function getRequiredBodyConfidence(landmarks: PoseLandmark[]) {
+  const visibilityValues = REQUIRED_BODY_LANDMARKS.map((index) => {
+    const landmark = landmarks[index];
+
+    if (!landmark) {
+      return 0;
+    }
+
+    return Math.min(landmark.visibility, landmark.presence ?? 1);
+  });
+  const confidence =
+    visibilityValues.reduce((total, value) => total + value, 0) /
+    visibilityValues.length;
+
+  return Math.max(0.45, Math.min(1, confidence));
 }

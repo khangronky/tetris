@@ -4,6 +4,7 @@ export const GAME_DURATION_MS = 60_000;
 export const COUNTDOWN_SECONDS = 3;
 export const CANVAS_WIDTH = 1080;
 export const CANVAS_HEIGHT = 1920;
+export const WALL_APPROACH_DURATION_MS = 5_000;
 
 export const BUSINESS_WALLS: BusinessWall[] = [
   {
@@ -92,7 +93,7 @@ export const DIFFICULTY_PHASES: DifficultyPhase[] = [
   {
     label: "Seed",
     startsAtMs: 0,
-    wallDurationMs: 3200,
+    wallDurationMs: WALL_APPROACH_DURATION_MS,
     threshold: 0.58,
     perfectThreshold: 0.84,
     holeScale: 1.16,
@@ -101,7 +102,7 @@ export const DIFFICULTY_PHASES: DifficultyPhase[] = [
   {
     label: "Series A",
     startsAtMs: 15_000,
-    wallDurationMs: 2600,
+    wallDurationMs: WALL_APPROACH_DURATION_MS,
     threshold: 0.64,
     perfectThreshold: 0.88,
     holeScale: 1.02,
@@ -110,7 +111,7 @@ export const DIFFICULTY_PHASES: DifficultyPhase[] = [
   {
     label: "Scale",
     startsAtMs: 30_000,
-    wallDurationMs: 2100,
+    wallDurationMs: WALL_APPROACH_DURATION_MS,
     threshold: 0.7,
     perfectThreshold: 0.9,
     holeScale: 0.94,
@@ -119,7 +120,7 @@ export const DIFFICULTY_PHASES: DifficultyPhase[] = [
   {
     label: "Unicorn",
     startsAtMs: 45_000,
-    wallDurationMs: 1700,
+    wallDurationMs: WALL_APPROACH_DURATION_MS,
     threshold: 0.74,
     perfectThreshold: 0.92,
     holeScale: 0.86,
