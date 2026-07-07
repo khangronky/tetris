@@ -10,10 +10,10 @@ export type GameStatus =
   | "error";
 
 export type FounderRank =
-  | "Intern"
-  | "Hustler"
+  | "Apprentice"
+  | "Solopreneur"
   | "Startup Founder"
-  | "CEO"
+  | "Visionary CEO"
   | "Unicorn Builder"
   | "Future Billionaire";
 

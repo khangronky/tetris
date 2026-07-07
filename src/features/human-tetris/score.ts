@@ -48,25 +48,25 @@ export function getAccuracy({
 }
 
 export function getFounderRank(score: number): FounderRank {
-  if (score >= 1000) {
+  if (score >= 2000) {
     return "Future Billionaire";
   }
 
-  if (score >= 800) {
+  if (score >= 1500) {
     return "Unicorn Builder";
   }
 
-  if (score >= 500) {
-    return "CEO";
+  if (score >= 1000) {
+    return "Visionary CEO";
   }
 
-  if (score >= 200) {
+  if (score >= 500) {
     return "Startup Founder";
   }
 
-  if (score >= 100) {
-    return "Hustler";
+  if (score >= 200) {
+    return "Solopreneur";
   }
 
-  return "Intern";
+  return "Apprentice";
 }
