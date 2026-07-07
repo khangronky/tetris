@@ -400,7 +400,7 @@ export function HumanTetrisGame() {
       <div className="rise-glow rise-glow-a" />
       <div className="rise-glow rise-glow-b" />
 
-      <section className="relative mx-auto grid min-h-screen w-full max-w-7xl grid-cols-1 items-center gap-5 px-4 py-5 lg:grid-cols-[340px_minmax(320px,500px)_340px] lg:px-6">
+      <section className="relative mx-auto grid min-h-screen w-full max-w-7xl grid-cols-1 items-center gap-5 px-4 py-5 lg:grid-cols-[340px_minmax(320px,560px)_420px] lg:px-6">
         <motion.aside
           className="order-2 flex flex-col gap-4 lg:order-1"
           initial={{ opacity: 0, x: -24 }}
