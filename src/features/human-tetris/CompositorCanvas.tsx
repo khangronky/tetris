@@ -75,7 +75,7 @@ export const CompositorCanvas = forwardRef<
       }}
       width={CANVAS_WIDTH}
       height={CANVAS_HEIGHT}
-      className="aspect-9/16 w-full rounded-[28px] border border-border/30 bg-background shadow-[0_28px_80px_rgba(0,27,84,0.22)]"
+      className="aspect-video w-full rounded-[28px] border border-border/30 bg-background shadow-[0_28px_80px_rgba(0,27,84,0.22)]"
     />
   );
 });
@@ -112,7 +112,7 @@ function drawCompositedFrame({
   }
 
   if (snapshot.status === "finished") {
-    drawFinalCard(context, snapshot, width);
+    drawFinalCard(context, snapshot, height, width);
   }
 }
 
@@ -220,9 +220,13 @@ function drawCameraPlaceholder(
   height: number,
 ) {
   const { fg, card, primary } = getCanvasTokens();
+  const panelWidth = width * 0.48;
+  const panelHeight = height * 0.44;
+  const panelX = (width - panelWidth) / 2;
+  const panelY = (height - panelHeight) / 2 - height * 0.02;
   context.fillStyle = card;
   context.globalAlpha = 0.58;
-  roundRect(context, 120, 470, width - 240, 760, 54);
+  roundRect(context, panelX, panelY, panelWidth, panelHeight, 42);
   context.fill();
   context.globalAlpha = 1;
   context.strokeStyle = primary;
@@ -232,10 +236,10 @@ function drawCameraPlaceholder(
   context.globalAlpha = 1;
 
   context.fillStyle = fg;
-  context.font = "700 58px sans-serif";
+  context.font = "700 46px sans-serif";
   context.textAlign = "center";
   context.fillText("Camera preview", width / 2, height / 2 - 20);
-  context.font = "400 34px sans-serif";
+  context.font = "400 26px sans-serif";
   context.globalAlpha = 0.68;
   context.fillText(
     "Start camera to load body tracking",
@@ -257,18 +261,18 @@ function drawPerspectiveGrid(
   context.strokeStyle = primary;
   context.lineWidth = 2;
   const vanishingX = width / 2;
-  const vanishingY = height * 0.46;
+  const vanishingY = height * 0.58;
 
-  for (let index = -7; index <= 7; index += 1) {
+  for (let index = -9; index <= 9; index += 1) {
     context.beginPath();
     context.moveTo(vanishingX, vanishingY);
-    context.lineTo(width / 2 + index * 138, height);
+    context.lineTo(width / 2 + index * 165, height);
     context.stroke();
   }
 
   const pulse = (now / 18) % 110;
 
-  for (let y = height * 0.52 + pulse; y < height; y += 110) {
+  for (let y = height * 0.68 + pulse; y < height; y += 78) {
     context.beginPath();
     context.moveTo(0, y);
     context.lineTo(width, y);
@@ -286,37 +290,44 @@ function drawHud(
 ) {
   const { fg, primary } = getCanvasTokens();
   const time = Math.max(0, Math.ceil(snapshot.timeLeftMs / 1000));
-  drawGlassPill(context, 48, 48, 235, 86, "TIME", `${time}s`);
+  drawGlassPill(context, 38, 34, 214, 90, "TIME", `${time}s`);
   drawGlassPill(
     context,
-    width - 345,
-    48,
-    297,
-    86,
+    width - 274,
+    34,
+    236,
+    90,
     "SCORE",
     `${snapshot.score}`,
   );
 
   drawLogo(context);
 
-  drawGlassPanel(context, 58, height - 252, width - 116, 168, 34);
+  drawGlassPanel(context, 42, height - 154, width - 84, 108, 28);
   context.textAlign = "left";
   context.fillStyle = fg;
-  context.font = "800 34px sans-serif";
-  context.fillText(snapshot.feedback, 92, height - 188);
-  context.font = "600 28px sans-serif";
+  context.font = "800 30px sans-serif";
+  context.fillText(snapshot.feedback, 72, height - 110);
+  context.font = "600 25px sans-serif";
   context.globalAlpha = 0.72;
   context.fillText(
     `Combo ${snapshot.combo}   Walls ${snapshot.wallsPassed}/${snapshot.wallsAttempted}`,
-    92,
-    height - 136,
+    72,
+    height - 78,
+  );
+  context.textAlign = "right";
+  context.font = "600 30px sans-serif";
+  context.fillText(
+    `Alignment Rate: ${Math.round(snapshot.alignment)}%`,
+    width - 72,
+    height - 78,
   );
   context.globalAlpha = 1;
 
-  const barX = 92;
-  const barY = height - 108;
-  const barWidth = width - 184;
-  const alignmentRatio = Math.max(0, Math.min(100, snapshot.alignment)) / 100;
+  const barX = 72;
+  const barY = height - 62;
+  const barWidth = width - 144;
+  const progressRatio = Math.max(0, Math.min(100, snapshot.alignment)) / 100;
   context.globalAlpha = 0.14;
   context.fillStyle = fg;
   roundRect(context, barX, barY, barWidth, 14, 7);
@@ -331,7 +342,7 @@ function drawHud(
   progress.addColorStop(0, primary);
   progress.addColorStop(1, primary);
   context.fillStyle = progress;
-  roundRect(context, barX, barY, barWidth * alignmentRatio, 14, 7);
+  roundRect(context, barX, barY, barWidth * progressRatio, 14, 7);
   context.fill();
 }
 
@@ -350,10 +361,10 @@ function drawFeedbackBurst(
   }
 
   const label = burst.kind === "success" ? "MATCHED" : "MISSED";
-  const panelWidth = width - 156;
-  const panelHeight = 126;
+  const panelWidth = width * 0.42;
+  const panelHeight = 116;
   const x = (width - panelWidth) / 2;
-  const y = height - 410;
+  const y = height * 0.16;
 
   context.save();
   context.globalAlpha = opacity;
@@ -374,7 +385,7 @@ function drawFeedbackBurst(
   context.lineWidth = 8;
   context.shadowColor = getFeedbackColor(burst.kind, 0.42);
   context.shadowBlur = 34;
-  roundRect(context, 26, 26, width - 52, height - 52, 38);
+  roundRect(context, 26, 26, width - 52, height - 52, 32);
   context.stroke();
 
   context.shadowBlur = 28;
@@ -390,11 +401,11 @@ function drawFeedbackBurst(
   context.stroke();
 
   context.textAlign = "center";
-  context.font = "900 22px sans-serif";
+  context.font = "900 18px sans-serif";
   context.fillStyle = getFeedbackColor(burst.kind, 1);
   context.fillText(label, width / 2, y + 34);
 
-  context.font = "900 38px sans-serif";
+  context.font = "900 30px sans-serif";
   const { fg } = getCanvasTokens();
   context.fillStyle = fg;
   context.fillText(
@@ -403,7 +414,7 @@ function drawFeedbackBurst(
     y + 76,
   );
 
-  context.font = "700 21px sans-serif";
+  context.font = "700 18px sans-serif";
   context.globalAlpha = 0.68;
   context.fillText(
     `${Math.round(burst.alignment)}% alignment`,
@@ -476,10 +487,18 @@ function drawCountdown(
   height: number,
 ) {
   const { fg, card, primary } = getCanvasTokens();
+  const boxSize = Math.min(width, height) * 0.22;
   context.save();
   context.fillStyle = card;
   context.globalAlpha = 0.72;
-  roundRect(context, width / 2 - 158, height / 2 - 158, 316, 316, 60);
+  roundRect(
+    context,
+    width / 2 - boxSize / 2,
+    height / 2 - boxSize / 2,
+    boxSize,
+    boxSize,
+    44,
+  );
   context.fill();
   context.globalAlpha = 1;
   context.strokeStyle = primary;
@@ -489,38 +508,43 @@ function drawCountdown(
   context.globalAlpha = 1;
   context.fillStyle = fg;
   context.textAlign = "center";
-  context.font = "900 164px sans-serif";
-  context.fillText(`${countdown}`, width / 2, height / 2 + 58);
+  context.font = "900 112px sans-serif";
+  context.fillText(`${countdown}`, width / 2, height / 2 + 38);
   context.restore();
 }
 
 function drawFinalCard(
   context: CanvasRenderingContext2D,
   snapshot: GameSnapshot,
+  height: number,
   width: number,
 ) {
   const { fg, primary } = getCanvasTokens();
-  drawGlassPanel(context, 90, 430, width - 180, 820, 56);
+  const cardWidth = width * 0.42;
+  const cardHeight = height * 0.58;
+  const x = (width - cardWidth) / 2;
+  const y = (height - cardHeight) / 2;
+  drawGlassPanel(context, x, y, cardWidth, cardHeight, 44);
   context.textAlign = "center";
   context.fillStyle = fg;
-  context.font = "900 56px sans-serif";
-  context.fillText("Founder Score", width / 2, 540);
-  context.font = "900 132px sans-serif";
-  context.fillText(`${snapshot.score}`, width / 2, 685);
+  context.font = "900 42px sans-serif";
+  context.fillText("Your Score", width / 2, y + 84);
+  context.font = "900 104px sans-serif";
+  context.fillText(`${snapshot.score}`, width / 2, y + 206);
 
-  context.font = "900 48px sans-serif";
+  context.font = "900 38px sans-serif";
   context.fillStyle = primary;
-  context.fillText(snapshot.rank.toUpperCase(), width / 2, 780);
+  context.fillText(snapshot.rank.toUpperCase(), width / 2, y + 286);
 
-  context.font = "700 32px sans-serif";
+  context.font = "700 24px sans-serif";
   context.fillStyle = fg;
   context.globalAlpha = 0.78;
   context.fillText(
     `Walls Passed ${snapshot.wallsPassed}   Longest Combo ${snapshot.longestCombo}`,
     width / 2,
-    870,
+    y + 356,
   );
-  context.fillText("Can your friends beat you?", width / 2, 940);
+  context.fillText("Can your friends beat you?", width / 2, y + 408);
   context.globalAlpha = 1;
 }
 
@@ -559,13 +583,13 @@ function drawGlassPill(
   drawGlassPanel(context, x, y, width, height, 24);
   context.globalAlpha = 0.56;
   context.fillStyle = fg;
-  context.font = "700 18px sans-serif";
+  context.font = "700 25px sans-serif";
   context.textAlign = "left";
-  context.fillText(label, x + 28, y + 31);
+  context.fillText(label, x + 28, y + 30);
   context.globalAlpha = 1;
   context.fillStyle = fg;
-  context.font = "900 34px sans-serif";
-  context.fillText(value, x + 28, y + 67);
+  context.font = "900 40px sans-serif";
+  context.fillText(value, x + 28, y + 75);
 }
 
 function drawGlassPanel(

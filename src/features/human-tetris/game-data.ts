@@ -2,12 +2,13 @@ import type { BusinessWall } from "./types";
 
 export const GAME_DURATION_MS = 60_000;
 export const COUNTDOWN_SECONDS = 3;
-export const CANVAS_WIDTH = 1080;
-export const CANVAS_HEIGHT = 1920;
+export const CANVAS_WIDTH = 1920;
+export const CANVAS_HEIGHT = 1080;
+
 // Increase the wall approach duration so players have more time to match each pose.
 export const WALL_APPROACH_DURATION_MS = 8_000;
-export const MATCH_THRESHOLD = 70;
-export const PERFECT_THRESHOLD = 90;
+export const MATCH_THRESHOLD = 50;
+export const PERFECT_THRESHOLD = 80;
 
 export const BUSINESS_WALLS: BusinessWall[] = [
   {

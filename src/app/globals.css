@@ -130,10 +130,6 @@
 }
 
 @layer components {
-  .rise-card {
-    @apply border-white/40 bg-white/55 shadow-[0_18px_60px_rgba(4,36,93,0.12)] backdrop-blur-xl;
-  }
-
   .rise-feedback-flash {
     border: 2px solid transparent;
   }
@@ -168,18 +164,6 @@
       auto,
       auto,
       auto;
-  }
-
-  .rise-glow {
-    @apply pointer-events-none absolute rounded-full blur-3xl;
-  }
-
-  .rise-glow-a {
-    @apply left-[8%] top-[12%] size-72 bg-primary/20;
-  }
-
-  .rise-glow-b {
-    @apply bottom-[12%] right-[8%] size-80 bg-cyan-300/20;
   }
 }
 

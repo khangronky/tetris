@@ -101,8 +101,8 @@ export async function shareRecording(recording: RecordingResult) {
   ) {
     await navigator.share({
       files: [file],
-      title: "Human Tetris: Founder Edition",
-      text: "Can your friends beat this Founder Score?",
+      title: "Human Tetris",
+      text: "Can your friends beat this score?",
     });
 
     return true;

@@ -10,9 +10,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Human Tetris: Founder Edition",
+  title: "Human Tetris",
   description:
-    "A Rise-branded Next.js body-tracking founder challenge built for laptop and mobile play.",
+    "A body-tracking founder challenge built for laptop and mobile play.",
 };
 
 export default function RootLayout({

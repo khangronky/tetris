@@ -61,7 +61,7 @@ export function PoseWallCard({ snapshot }: PoseWallCardProps) {
     : Math.round((1 - snapshot.distance) * 100);
 
   return (
-    <section className="rise-card rounded-xl border border-border bg-card/55 p-4 shadow-lg backdrop-blur">
+    <section className="rounded-xl border border-border bg-card/50 p-4 shadow-[0_18px_60px_rgba(4,36,93,0.12)] backdrop-blur-xl">
       <div className="rounded-xl border-2 border-primary/75 bg-card/45 px-4 py-3 shadow-[0_16px_40px_color-mix(in_oklch,var(--primary)_16%,transparent)]">
         <div className="text-center">
           <p className="text-base font-black leading-tight text-foreground">
@@ -70,18 +70,20 @@ export function PoseWallCard({ snapshot }: PoseWallCardProps) {
           <p className="text-xs font-semibold text-muted-foreground">
             {snapshot.currentWall.theme}
           </p>
+          <p className="mt-1 text-xs font-semibold text-muted-foreground">
+            {snapshot.currentWall.cue}
+          </p>
         </div>
         <div className="mt-3 flex flex-col gap-2">
           <div className="overflow-hidden rounded-lg bg-foreground shadow-inner">
             <LandmarkSkeleton landmarks={targetPose.landmarks} />
           </div>
           <div className="overflow-hidden rounded-lg bg-card/45 shadow-inner">
-            <div className="relative aspect-2816/1536 overflow-hidden rounded-md bg-card/50">
+            <div className="relative aspect-video overflow-hidden rounded-md bg-card/50">
               <Image
                 src={targetPose.image}
                 alt={`${snapshot.currentWall.title} template pose`}
                 fill
-                sizes="160px"
                 className="object-contain"
               />
             </div>
@@ -109,7 +111,7 @@ function LandmarkSkeleton({
       preserveAspectRatio="none"
       role="img"
       aria-label="Target pose landmarks"
-      className="aspect-2816/1536 w-full overflow-visible rounded-md bg-[radial-gradient(circle_at_center,color-mix(in_oklch,var(--primary)_20%,transparent),color-mix(in_oklch,var(--foreground)_8%,transparent)_54%,color-mix(in_oklch,var(--foreground)_34%,transparent))]"
+      className="aspect-video w-full overflow-visible rounded-md bg-[radial-gradient(circle_at_center,color-mix(in_oklch,var(--primary)_20%,transparent),color-mix(in_oklch,var(--foreground)_8%,transparent)_54%,color-mix(in_oklch,var(--foreground)_34%,transparent))]"
     >
       <g strokeLinecap="round" strokeLinejoin="round">
         {POSE_CONNECTIONS.map(([from, to]) => (
@@ -132,7 +134,11 @@ function LandmarkSkeleton({
             cx={landmark.x * 100}
             cy={landmark.y * 100}
             r={index === 0 ? 1.25 : 0.86}
-            fill={index >= 11 ? "var(--color-primary-foreground)" : "var(--color-primary)"}
+            fill={
+              index >= 11
+                ? "var(--color-primary-foreground)"
+                : "var(--color-primary)"
+            }
             stroke="var(--color-foreground)"
             strokeWidth="0.22"
             vectorEffect="non-scaling-stroke"

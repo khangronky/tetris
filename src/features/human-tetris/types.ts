@@ -1,4 +1,3 @@
-export type { PoseId } from "./target-poses";
 import type { PoseId } from "./target-poses";
 
 export type GameStatus =

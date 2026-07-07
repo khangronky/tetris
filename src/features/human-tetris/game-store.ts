@@ -61,7 +61,7 @@ const INITIAL_STATE = {
   countdown: null,
   alignment: 0,
   distance: 1,
-  feedback: "Start camera to enter the founder wall run",
+  feedback: "Start camera to enter the wall run",
   feedbackBurst: null,
   recording: null,
 };
@@ -112,7 +112,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({
       ...INITIAL_STATE,
       status: "ready",
-      feedback: "Ready for another founder run.",
+      feedback: "Ready for another wall run.",
     });
   },
 

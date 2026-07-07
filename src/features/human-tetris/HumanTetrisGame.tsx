@@ -13,8 +13,6 @@ import {
 import { motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
-
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -24,8 +22,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-
 import { CompositorCanvas } from "./CompositorCanvas";
 import {
   COUNTDOWN_SECONDS,
@@ -53,6 +49,9 @@ import {
   scoreWall,
 } from "./score";
 import type { GameSnapshot, PoseFrame } from "./types";
+
+const glassCardClassName =
+  "border-white/40 bg-white/55 shadow-[0_18px_60px_rgba(4,36,93,0.12)] backdrop-blur-xl";
 
 export function HumanTetrisGame() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -133,9 +132,6 @@ export function HumanTetrisGame() {
     }),
     [longestCombo, rank, score, wallsAttempted, wallsPassed],
   );
-  const progressValue = Math.round(
-    ((GAME_DURATION_MS - snapshot.timeLeftMs) / GAME_DURATION_MS) * 100,
-  );
 
   const cleanupRecordingUrl = useCallback(() => {
     const currentRecording = useGameStore.getState().recording;
@@ -172,7 +168,7 @@ export function HumanTetrisGame() {
       try {
         const result = await recordingRef.current.stop();
         useGameStore.getState().setRecording(result);
-        toast.success("Founder recording is ready.");
+        toast.success("Your recording is ready.");
       } catch (recordingError) {
         toast.warning(
           recordingError instanceof Error
@@ -268,8 +264,8 @@ export function HumanTetrisGame() {
         audio: false,
         video: {
           facingMode: "user",
-          width: { ideal: 1080 },
-          height: { ideal: 1920 },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
         },
       });
       const engine = await createPoseEngine().catch((engineError: unknown) => {
@@ -397,202 +393,178 @@ export function HumanTetrisGame() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-background text-foreground">
       <div className="rise-grid absolute inset-0" />
-      <div className="rise-glow rise-glow-a" />
-      <div className="rise-glow rise-glow-b" />
+      <div className="pointer-events-none absolute left-[4%] top-[9%] size-72 rounded-full bg-primary/18 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-[10%] right-[5%] size-96 rounded-full bg-cyan-300/18 blur-3xl" />
 
-      <section className="relative mx-auto grid min-h-screen w-full max-w-7xl grid-cols-1 items-center gap-5 px-4 py-5 lg:grid-cols-[340px_minmax(320px,560px)_420px] lg:px-6">
-        <motion.aside
-          className="order-2 flex flex-col gap-4 lg:order-1"
-          initial={{ opacity: 0, x: -24 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.45 }}
-        >
-          <Card className="rise-card" size="sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <SparklesIcon className="size-4 text-primary" />
-                Human Tetris
-              </CardTitle>
-              <CardDescription>
-                Founder Edition turns business moves into 60 seconds of body
-                tracking.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="secondary">RISE</Badge>
-                <Badge variant="outline">9:16 recording</Badge>
-                <Badge variant="outline">No audio v1</Badge>
-              </div>
-              <div className="rounded-lg bg-secondary/70 p-3 text-sm text-muted-foreground">
-                Match each incoming business wall before it reaches you. The
-                recording is generated at the end for TikTok, Reels, or Shorts.
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-wrap gap-2">
-              {status === "idle" || status === "error" ? (
-                <Button onClick={startCamera}>
-                  <CameraIcon data-icon="inline-start" />
-                  Start camera
-                </Button>
-              ) : null}
-              {status === "loading" ? (
-                <Button disabled>
-                  <CameraIcon data-icon="inline-start" />
-                  Loading camera
-                </Button>
-              ) : null}
-              {status === "ready" ? (
-                <Button onClick={startCountdown}>
-                  <PlayIcon data-icon="inline-start" />
-                  Begin run
-                </Button>
-              ) : null}
-              {status === "finished" ? (
-                <Button onClick={resetForReplay}>
-                  <RotateCcwIcon data-icon="inline-start" />
-                  Replay
-                </Button>
-              ) : null}
-              {status !== "idle" ? (
-                <Button variant="ghost" onClick={stopCamera}>
-                  Stop camera
-                </Button>
-              ) : null}
-            </CardFooter>
-          </Card>
-
-          <Card className="rise-card" size="sm">
-            <CardHeader>
-              <CardTitle>Current Wall</CardTitle>
-              <CardDescription>{snapshot.currentWall.theme}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <div>
-                <p className="text-xl font-semibold">
-                  {snapshot.currentWall.title}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {snapshot.currentWall.cue}
-                </p>
-              </div>
-              <Progress value={progressValue} />
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <Metric
-                  label="Timer"
-                  value={`${Math.ceil(snapshot.timeLeftMs / 1000)}s`}
-                />
-                <Metric
-                  label="Align"
-                  value={`${Math.round(snapshot.alignment)}%`}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </motion.aside>
-
-        <motion.section
-          className="order-1 flex justify-center lg:order-2"
-          initial={{ opacity: 0, y: 20 }}
+      <section className="relative mx-auto w-full max-w-[1600px] px-4 py-6 lg:px-8 lg:py-8">
+        <motion.header
+          className="mx-auto mb-8 max-w-5xl text-center"
+          initial={{ opacity: 0, y: -18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="relative w-full max-w-110">
-            <div className="absolute -inset-3 rounded-[36px] bg-primary/15 blur-2xl" />
-            <div className="relative rounded-[34px] border border-border bg-card/35 p-2 shadow-2xl backdrop-blur-xl">
-              <CompositorCanvas
-                ref={canvasRef}
-                videoRef={videoRef}
-                snapshot={snapshot}
-              />
-              {feedbackBurst ? (
-                <div
-                  key={feedbackBurst.id}
-                  data-feedback-kind={feedbackBurst.kind}
-                  className="rise-feedback-flash pointer-events-none absolute inset-0 rounded-[34px]"
-                />
-              ) : null}
-              <video ref={videoRef} className="sr-only" muted playsInline />
-            </div>
-          </div>
-        </motion.section>
-
-        <motion.aside
-          className="order-3 flex flex-col gap-4"
-          initial={{ opacity: 0, x: 24 }}
-          animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.45 }}
         >
-          <PoseWallCard snapshot={snapshot} />
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-white/65 px-4 py-1.5 text-sm font-semibold text-primary shadow-[0_10px_30px_rgba(4,36,93,0.08)] backdrop-blur-xl">
+            <SparklesIcon className="size-4" />
+            Human Tetris
+          </div>
+          <h1 className="mt-4 text-balance text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
+            Match the wall. Share the run.
+          </h1>
+          <p className="mx-auto mt-4 max-w-3xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
+            Human Tetris turns founder energy into a live body-tracking game.
+            Step in, mirror each incoming business pose, and finish with a
+            shareable challenge clip.
+          </p>
+        </motion.header>
 
-          <Card className="rise-card" size="sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrophyIcon className="size-4 text-primary" />
-                Founder Score
-              </CardTitle>
-              <CardDescription>{snapshot.rank}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <p className="text-5xl font-black tracking-tight">{score}</p>
-              <div className="grid grid-cols-2 gap-2">
-                <Metric
-                  label="Walls"
-                  value={`${wallsPassed}/${wallsAttempted}`}
-                />
-                <Metric label="Best combo" value={`${longestCombo}`} />
-                <Metric label="Accuracy" value={`${finalStats.accuracy}%`} />
-                <Metric label="Rank" value={finalStats.rank} />
-              </div>
-            </CardContent>
-          </Card>
-
-          {status === "error" ? (
-            <Card className="rise-card border-destructive/30" size="sm">
-              <CardHeader>
-                <CardTitle>Camera Error</CardTitle>
-                <CardDescription>{error}</CardDescription>
-              </CardHeader>
-            </Card>
-          ) : null}
-
-          {status === "finished" ? (
-            <Card className="rise-card" size="sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <VideoIcon className="size-4 text-primary" />
-                  Share Card
-                </CardTitle>
-                <CardDescription>
-                  Recording is {recording ? "ready" : "being prepared"}.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-3">
-                <div className="rounded-lg bg-secondary/70 p-3">
-                  <p className="text-sm text-muted-foreground">Founder Score</p>
-                  <p className="text-3xl font-black">{finalStats.score}</p>
-                  <p className="mt-2 text-sm font-medium">
-                    {SOCIAL_HASHTAGS.slice(0, 4).join(" ")}
-                  </p>
+        <div className="flex min-h-[calc(100vh-17rem)] items-center">
+          <div className="grid w-full gap-6 lg:grid-cols-3">
+            <motion.section
+              className="lg:col-span-2 flex flex-col gap-5"
+              initial={{ opacity: 0, x: -24 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.45 }}
+            >
+              <div className="relative flex min-w-0 items-center justify-center">
+                <div className="absolute -inset-4 rounded-[40px] bg-primary/16 blur-3xl" />
+                <div className="relative w-full rounded-[34px] border border-white/55 bg-white/35 p-2.5 shadow-[0_28px_120px_rgba(0,73,121,0.22)] backdrop-blur-xl">
+                  <CompositorCanvas
+                    ref={canvasRef}
+                    videoRef={videoRef}
+                    snapshot={snapshot}
+                  />
+                  {feedbackBurst ? (
+                    <div
+                      key={feedbackBurst.id}
+                      data-feedback-kind={feedbackBurst.kind}
+                      className="rise-feedback-flash pointer-events-none absolute inset-2.5 rounded-[30px]"
+                    />
+                  ) : null}
+                  <video ref={videoRef} className="sr-only" muted playsInline />
                 </div>
-              </CardContent>
-              <CardFooter className="flex flex-wrap gap-2">
-                <Button disabled={!recording} onClick={handleShare}>
-                  <Share2Icon data-icon="inline-start" />
-                  Share
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={!recording}
-                  onClick={handleDownload}
+              </div>
+
+              <Card className={glassCardClassName} size="sm">
+                <CardFooter className="border-t-0 bg-transparent pt-0 flex flex-wrap gap-2">
+                  {status === "idle" || status === "error" ? (
+                    <Button onClick={startCamera}>
+                      <CameraIcon data-icon="inline-start" />
+                      Start camera
+                    </Button>
+                  ) : null}
+                  {status === "loading" ? (
+                    <Button disabled>
+                      <CameraIcon data-icon="inline-start" />
+                      Loading camera
+                    </Button>
+                  ) : null}
+                  {status === "ready" ? (
+                    <Button onClick={startCountdown}>
+                      <PlayIcon data-icon="inline-start" />
+                      Begin run
+                    </Button>
+                  ) : null}
+                  {status === "finished" ? (
+                    <Button onClick={resetForReplay}>
+                      <RotateCcwIcon data-icon="inline-start" />
+                      Replay
+                    </Button>
+                  ) : null}
+                  {status !== "idle" ? (
+                    <Button variant="ghost" onClick={stopCamera}>
+                      Stop camera
+                    </Button>
+                  ) : null}
+                </CardFooter>
+              </Card>
+            </motion.section>
+
+            <motion.aside
+              className="lg:col-span-1 flex flex-col gap-5"
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.45 }}
+            >
+              <PoseWallCard snapshot={snapshot} />
+
+              <Card className={glassCardClassName} size="sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrophyIcon className="size-4 text-primary" />
+                    Your Score
+                  </CardTitle>
+                  <CardDescription>{snapshot.rank}</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-3">
+                  <p className="text-5xl font-black tracking-tight">{score}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Metric
+                      label="Walls"
+                      value={`${wallsPassed}/${wallsAttempted}`}
+                    />
+                    <Metric label="Best combo" value={`${longestCombo}`} />
+                    <Metric
+                      label="Accuracy"
+                      value={`${finalStats.accuracy}%`}
+                    />
+                    <Metric label="Rank" value={finalStats.rank} />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {status === "error" ? (
+                <Card
+                  className="border-destructive/30 bg-white/55 shadow-[0_18px_60px_rgba(4,36,93,0.12)] backdrop-blur-xl"
+                  size="sm"
                 >
-                  <DownloadIcon data-icon="inline-start" />
-                  Save
-                </Button>
-              </CardFooter>
-            </Card>
-          ) : null}
-        </motion.aside>
+                  <CardHeader>
+                    <CardTitle>Camera Error</CardTitle>
+                    <CardDescription>{error}</CardDescription>
+                  </CardHeader>
+                </Card>
+              ) : null}
+
+              {status === "finished" ? (
+                <Card className={glassCardClassName} size="sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <VideoIcon className="size-4 text-primary" />
+                      Share Card
+                    </CardTitle>
+                    <CardDescription>
+                      Recording is {recording ? "ready" : "being prepared"}.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-3">
+                    <div className="rounded-lg bg-secondary/70 p-3">
+                      <p className="text-sm text-muted-foreground">
+                        Your Score
+                      </p>
+                      <p className="text-3xl font-black">{finalStats.score}</p>
+                      <p className="mt-2 text-sm font-medium">
+                        {SOCIAL_HASHTAGS.slice(0, 4).join(" ")}
+                      </p>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex flex-wrap gap-2">
+                    <Button disabled={!recording} onClick={handleShare}>
+                      <Share2Icon data-icon="inline-start" />
+                      Share
+                    </Button>
+                    <Button
+                      variant="outline"
+                      disabled={!recording}
+                      onClick={handleDownload}
+                    >
+                      <DownloadIcon data-icon="inline-start" />
+                      Save
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ) : null}
+            </motion.aside>
+          </div>
+        </div>
       </section>
     </main>
   );
