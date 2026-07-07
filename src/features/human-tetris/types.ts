@@ -82,7 +82,8 @@ export type RecordingResult = {
 
 export type GameSnapshot = {
   status: GameStatus;
-  currentWall: BusinessWall;
+  currentWall: BusinessWall | null;
+  usedWallIndexes: number[];
   timeLeftMs: number;
   score: number;
   combo: number;

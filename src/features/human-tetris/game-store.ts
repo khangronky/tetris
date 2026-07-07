@@ -18,7 +18,8 @@ type GameStore = {
   longestCombo: number;
   wallsPassed: number;
   wallsAttempted: number;
-  currentWallIndex: number;
+  currentWallIndex: number | null;
+  usedWallIndexes: number[];
   timeLeftMs: number;
   elapsedMs: number;
   countdown: number | null;
@@ -47,6 +48,47 @@ type GameStore = {
   getSnapshot: () => GameSnapshot;
 };
 
+function randomInt(max: number) {
+  return Math.floor(Math.random() * max);
+}
+
+function pickRandomWallIndex(excludedIndexes: readonly number[] = []) {
+  const availableIndexes = BUSINESS_WALLS.map((_, index) => index).filter(
+    (index) => !excludedIndexes.includes(index),
+  );
+
+  if (availableIndexes.length === 0) {
+    return 0;
+  }
+
+  return availableIndexes[randomInt(availableIndexes.length)];
+}
+
+function getNextWallIndex({
+  previousWallIndex,
+  usedWallIndexes,
+}: {
+  previousWallIndex: number;
+  usedWallIndexes: readonly number[];
+}) {
+  const remainingIndexes = BUSINESS_WALLS.map((_, index) => index).filter(
+    (index) => !usedWallIndexes.includes(index),
+  );
+
+  const pool =
+    remainingIndexes.length > 0
+      ? remainingIndexes
+      : BUSINESS_WALLS.map((_, index) => index).filter(
+          (index) => index !== previousWallIndex,
+        );
+
+  if (pool.length === 0) {
+    return previousWallIndex;
+  }
+
+  return pool[randomInt(pool.length)];
+}
+
 const INITIAL_STATE = {
   status: "idle" as GameStatus,
   error: null,
@@ -55,7 +97,8 @@ const INITIAL_STATE = {
   longestCombo: 0,
   wallsPassed: 0,
   wallsAttempted: 0,
-  currentWallIndex: 0,
+  currentWallIndex: null as number | null,
+  usedWallIndexes: [] as number[],
   timeLeftMs: 60_000,
   elapsedMs: 0,
   countdown: null,
@@ -97,9 +140,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   setPlaying() {
+    const currentWallIndex = pickRandomWallIndex();
+
     set({
       ...INITIAL_STATE,
       status: "playing",
+      currentWallIndex,
+      usedWallIndexes: [currentWallIndex],
       feedback: "Match the incoming business wall.",
     });
   },
@@ -126,10 +173,26 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   advanceWall() {
-    set((state) => ({
-      currentWallIndex: state.currentWallIndex + 1,
-      distance: 1,
-    }));
+    set((state) => {
+      if (state.currentWallIndex === null) {
+        return state;
+      }
+
+      const currentWallIndex = getNextWallIndex({
+        previousWallIndex: state.currentWallIndex,
+        usedWallIndexes: state.usedWallIndexes,
+      });
+      const hasUsedAllWalls =
+        state.usedWallIndexes.length >= BUSINESS_WALLS.length;
+
+      return {
+        currentWallIndex,
+        usedWallIndexes: hasUsedAllWalls
+          ? [currentWallIndex]
+          : [...state.usedWallIndexes, currentWallIndex],
+        distance: 1,
+      };
+    });
   },
 
   applyWallResult(result) {
@@ -164,6 +227,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   finishRun(bonusPoints) {
     set((state) => ({
       status: "finished",
+      currentWallIndex: null,
+      usedWallIndexes: [],
       score: state.score + bonusPoints,
       combo: 0,
       feedbackBurst: null,
@@ -183,7 +248,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     return {
       status: state.status,
-      currentWall: getWallByIndex(state.currentWallIndex),
+      currentWall:
+        state.currentWallIndex === null
+          ? null
+          : getWallByIndex(state.currentWallIndex),
+      usedWallIndexes: state.usedWallIndexes,
       timeLeftMs: state.timeLeftMs,
       score: state.score,
       combo: state.combo,

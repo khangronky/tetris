@@ -76,6 +76,7 @@ export function HumanTetrisGame() {
   const wallsAttempted = useGameStore((state) => state.wallsAttempted);
   const longestCombo = useGameStore((state) => state.longestCombo);
   const currentWallIndex = useGameStore((state) => state.currentWallIndex);
+  const usedWallIndexes = useGameStore((state) => state.usedWallIndexes);
   const timeLeftMs = useGameStore((state) => state.timeLeftMs);
   const countdown = useGameStore((state) => state.countdown);
   const alignment = useGameStore((state) => state.alignment);
@@ -83,7 +84,7 @@ export function HumanTetrisGame() {
   const feedback = useGameStore((state) => state.feedback);
   const feedbackBurst = useGameStore((state) => state.feedbackBurst);
   const currentWall = useMemo(
-    () => getWallByIndex(currentWallIndex),
+    () => (currentWallIndex === null ? null : getWallByIndex(currentWallIndex)),
     [currentWallIndex],
   );
   const rank = useMemo(() => getFounderRank(score), [score]);
@@ -91,6 +92,7 @@ export function HumanTetrisGame() {
     () => ({
       status,
       currentWall,
+      usedWallIndexes,
       timeLeftMs,
       score,
       combo,
@@ -107,6 +109,7 @@ export function HumanTetrisGame() {
     [
       status,
       currentWall,
+      usedWallIndexes,
       timeLeftMs,
       score,
       combo,
@@ -191,6 +194,10 @@ export function HumanTetrisGame() {
 
       const elapsedMs = now - startTimeRef.current;
       const timeLeftMs = Math.max(0, GAME_DURATION_MS - elapsedMs);
+      if (state.currentWallIndex === null) {
+        return;
+      }
+
       const wall = getWallByIndex(state.currentWallIndex);
       const wallElapsed = now - wallStartTimeRef.current;
       const distance = Math.max(0, 1 - wallElapsed / WALL_APPROACH_DURATION_MS);

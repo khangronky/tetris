@@ -47,18 +47,32 @@ const POSE_CONNECTIONS = [
   [28, 32],
 ] as const;
 
-const STATIC_PROGRESS_STATUSES = new Set<GameSnapshot["status"]>([
-  "idle",
-  "loading",
-  "ready",
-  "countdown",
-]);
-
 export function PoseWallCard({ snapshot }: PoseWallCardProps) {
+  const isPlaying =
+    snapshot.status === "playing" && snapshot.currentWall !== null;
+  const incomingPercent = isPlaying
+    ? Math.round((1 - snapshot.distance) * 100)
+    : 0;
+
+  if (!isPlaying || snapshot.currentWall === null) {
+    return (
+      <section className="rounded-xl border border-border bg-card/50 p-4 shadow-[0_18px_60px_rgba(4,36,93,0.12)] backdrop-blur-xl">
+        <div className="rounded-xl border-2 border-dashed border-primary/40 bg-card/40 px-4 py-6 text-center">
+          <p className="text-base font-black leading-tight text-foreground">
+            Targetted pose will appear here
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            The active target is hidden until the game starts.
+          </p>
+          <div className="mt-4 rounded-lg bg-secondary/60 px-4 py-8 text-sm text-muted-foreground">
+            Start the run to reveal the first wall.
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   const targetPose = TARGET_POSES[snapshot.currentWall.poseId];
-  const incomingPercent = STATIC_PROGRESS_STATUSES.has(snapshot.status)
-    ? 0
-    : Math.round((1 - snapshot.distance) * 100);
 
   return (
     <section className="rounded-xl border border-border bg-card/50 p-4 shadow-[0_18px_60px_rgba(4,36,93,0.12)] backdrop-blur-xl">
